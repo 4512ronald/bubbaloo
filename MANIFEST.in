@@ -1,0 +1,4 @@
+include *.md
+include *.png
+include LICENSE
+include *.txt
