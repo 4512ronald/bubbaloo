@@ -1,0 +1,15 @@
+[default]
+
+[development]
+
+raw_path = "/home/ronald/DataspellProjects/PipelineProject/pruebas/raw"
+trusted_path = "/home/ronald/DataspellProjects/PipelineProject/pruebas/trusted"
+trigger = { once = "true" }
+
+[production]
+
+[qa]
+
+[qa.subvar]
+
+name = "subvar"
