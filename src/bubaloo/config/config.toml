@@ -1,5 +1,8 @@
 [default]
 
+
+
+
 [development]
 
 raw_path = "/home/ronald/DataspellProjects/PipelineProject/pruebas/raw"
@@ -8,8 +11,13 @@ trigger = { once = "true" }
 
 [production]
 
+
+
 [qa]
 
 [qa.subvar]
+
+[qa.subvar.subgrupo]
+
 
 name = "subvar"

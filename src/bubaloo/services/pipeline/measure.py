@@ -1,8 +1,8 @@
 import time
 
-from bubaloo.tools.pipeline.config import Config
-from bubaloo.tools.pipeline.session import Session
-from bubaloo.tools.pipeline.state import PipelineState
+from bubaloo.services.pipeline.config import Config
+from bubaloo.services.pipeline.session import Session
+from bubaloo.services.pipeline.state import PipelineState
 
 
 class Measure:

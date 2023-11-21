@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from pyspark.sql import SparkSession
 
-from bubaloo.tools.pipeline import Config, Logger, PipelineState
+from bubaloo.services.pipeline import Config, Logger, PipelineState
 
 
 class Stage(ABC):

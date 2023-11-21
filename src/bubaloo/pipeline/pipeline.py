@@ -2,12 +2,12 @@ from typing import Union, Dict, Callable, Any
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.streaming import DataStreamWriter, StreamingQuery
 
-from bubaloo.base.extract import Extract
-from bubaloo.base.load import Load
-from bubaloo.base.transform import Transform
-from bubaloo.tools.pipeline import Session, Config, PipelineState
-from bubaloo.tools.pipeline.errors import ExecutionError
-from bubaloo.tools.pipeline.logger import Logger
+from bubaloo.pipeline import Extract
+from bubaloo.pipeline import Load
+from bubaloo.pipeline import Transform
+from bubaloo.services.pipeline import Session, Config, PipelineState
+from bubaloo.services.pipeline.errors import ExecutionError
+from bubaloo.services.pipeline.logger import Logger
 
 
 class Pipeline:

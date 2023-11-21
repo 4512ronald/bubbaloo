@@ -11,13 +11,13 @@ from google.cloud.storage.blob import Blob
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType
 
-from bubaloo.tools.pipeline.config import Config
-from bubaloo.tools.cloud.gcp import GCSClient
-from bubaloo.tools.pipeline.logger import Logger
-from bubaloo.tools.pipeline.session import Session
-from bubaloo.tools.pipeline.state import PipelineState
-from bubaloo.tools.pipeline.errors import DataFrameSchemaError, CorruptedPathError
-from bubaloo.shared.functions.helper import compare_schemas, get_pyarrow_schema, get_message, identify_error
+from bubaloo.services.pipeline.config import Config
+from bubaloo.services.cloud.gcp import GCSClient
+from bubaloo.services.pipeline.logger import Logger
+from bubaloo.services.pipeline.session import Session
+from bubaloo.services.pipeline.state import PipelineState
+from bubaloo.services.pipeline.errors import DataFrameSchemaError, CorruptedPathError
+from bubaloo.utils.functions.validation_parquet_helper import compare_schemas, get_pyarrow_schema, get_message, identify_error
 
 
 class DataValidator:

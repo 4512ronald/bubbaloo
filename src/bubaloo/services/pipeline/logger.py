@@ -1,4 +1,4 @@
-from bubaloo.tools.pipeline.session import Session
+from bubaloo.services.pipeline.session import Session
 
 
 class Logger:
