@@ -3,7 +3,7 @@ import os
 from setuptools import setup
 
 setup(
-    name="bubaloo",
+    name="bubbaloo",
     version="0.0.10",
     description="This package is designed to make it easy to build data pipelines using pyspark",
     url="https://github.com/4512ronald/bubaloo",
