@@ -16,7 +16,22 @@ from bubbaloo.utils.interfaces.pipeline_logger import ILogger
 
 
 def validate_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validates the provided parameters against expected types.
 
+    Ensures that each key in the param_types dictionary exists in the params
+    argument and that each has the correct type. Raises a ValueError if a
+    parameter is missing or has an incorrect type.
+
+    Args:
+        params (Dict[str, Any]): The parameters to validate.
+
+    Returns:
+        Dict[str, Any]: The validated parameters.
+
+    Raises:
+        ValueError: If a parameter is missing or has an incorrect type.
+    """
     param_types = {
         "logger": ILogger,
         "spark": SparkSession,
@@ -40,15 +55,18 @@ def validate_params(params: Dict[str, Any]) -> Dict[str, Any]:
 
 def compare_schemas(required_schema: pa.Schema, input_schema: pa.Schema, path: str = '') -> List[str]:
     """
-    Compare two PyArrow schemas and return the differences.
+    Compares two PyArrow schemas and identifies differences.
+
+    Recursively checks for differences in field names and types between two schemas.
+    Differences are returned as a list of strings indicating the paths to the differing fields.
 
     Args:
-        required_schema (pa.Schema): The required schema.
-        input_schema (pa.Schema): The input schema.
-        path (str): The path of the schema (default: '').
+        required_schema (pa.Schema): The schema that is expected.
+        input_schema (pa.Schema): The schema to compare against the required schema.
+        path (str, optional): The base path for the fields being compared. Defaults to an empty string.
 
     Returns:
-        List[str]: List of differences between the schemas.
+        List[str]: A list of strings indicating the paths to the differing fields.
     """
     fields1 = {field.name: field for field in required_schema}
     fields2 = {field.name: field for field in input_schema}
@@ -82,7 +100,18 @@ def compare_schemas(required_schema: pa.Schema, input_schema: pa.Schema, path: s
 
 
 def get_pyarrow_schema(path: str, project: str) -> pa.Schema:
+    """
+    Retrieves the PyArrow schema for a Parquet file stored in GCS.
 
+    Opens a Parquet file using GCSFileSystem and extracts its schema.
+
+    Args:
+        path (str): The path to the Parquet file in GCS.
+        project (str): The GCP project name.
+
+    Returns:
+        pa.Schema: The PyArrow schema of the Parquet file.
+    """
     fs = GCSFileSystem(project=project)
     file = fs.open(path)
     parquet_file = pq.ParquetFile(file)
@@ -92,13 +121,13 @@ def get_pyarrow_schema(path: str, project: str) -> pa.Schema:
 
 def get_message(error: Exception) -> str:
     """
-    Extract the error message from an exception.
+    Extracts and returns the message from a JSON-formatted exception.
 
     Args:
-        error (Exception): The exception object.
+        error (Exception): The exception to extract the message from.
 
     Returns:
-        str: The error message.
+        str: The extracted message.
     """
     formatted_error = json.loads(str(error))
     return formatted_error["message"]
@@ -106,13 +135,16 @@ def get_message(error: Exception) -> str:
 
 def identify_error(error: Exception) -> str:
     """
-    Identify the error message and return a corresponding error description.
+    Identifies and returns a user-friendly error message based on the given exception.
+
+    Maps known error messages to more descriptive, user-friendly ones. If the error
+    is not recognized, returns a default message with the original error string.
 
     Args:
-        error (Exception): The error object.
+        error (Exception): The exception to identify.
 
     Returns:
-        str: The error description.
+        str: A user-friendly description of the error.
     """
     exception_str = str(error).lower()
 
@@ -133,14 +165,14 @@ def identify_error(error: Exception) -> str:
 
 def _get_stats(history: DataFrame, statistic: str) -> int:
     """
-    Get the value of a specific statistic from the history DataFrame.
+    Retrieves a specific statistic from the operationMetrics column of a DataFrame.
 
     Args:
-        history (DataFrame): The history DataFrame.
-        statistic (str): The name of the statistic.
+        history (DataFrame): A DataFrame containing operation metrics.
+        statistic (str): The name of the statistic to retrieve.
 
     Returns:
-        int: The value of the statistic.
+        int: The value of the requested statistic.
     """
     ordered_history = history.orderBy(col("timestamp").desc())
 
@@ -154,15 +186,18 @@ def _get_stats(history: DataFrame, statistic: str) -> int:
 
 def get_stats(spark: SparkSession, path: str) -> Dict[str, int]:
     """
-    Get statistics about a Delta table.
+     Retrieves various statistics for operations performed on a Delta table.
 
-    Args:
-        spark (SparkSession): The SparkSession instance.
-        path (str): The path to the Delta table.
+     Gathers statistics like the number of rows updated, inserted, or deleted for the
+     last operation performed on a Delta table, identified by its path.
 
-    Returns:
-        Dict[str, int]: Dictionary containing the statistics.
-    """
+     Args:
+         spark (SparkSession): The SparkSession to execute SQL queries.
+         path (str): The path to the Delta table.
+
+     Returns:
+         Dict[str, int]: A dictionary containing various statistics.
+     """
     count = spark.sql(f"SELECT COUNT(*) FROM delta.`{path}`")
 
     history = spark.sql(f"DESCRIBE HISTORY delta.`{path}`")
@@ -195,14 +230,16 @@ def get_stats(spark: SparkSession, path: str) -> Dict[str, int]:
 
 def get_error(error: Exception) -> Dict[str, str]:
     """
-    Extract the error details from an exception.
+    Attempts to parse an exception into a JSON-formatted dictionary.
+
+    If the exception cannot be parsed as JSON, returns a dictionary with the error
+    message as a string.
 
     Args:
-        error (Exception): The exception object.
+        error (Exception): The exception to parse.
 
     Returns:
-        Dict[str, str]: Dictionary containing the error details.
-
+        Dict[str, str]: A dictionary representation of the error.
     """
     try:
         return json.loads(str(error))

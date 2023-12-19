@@ -19,7 +19,7 @@ from bubbaloo.utils.functions.validation_parquet_helper import (
     get_message,
     identify_error, validate_params
 )
-from bubbaloo.utils.interfaces import IStorageManager
+from bubbaloo.utils.interfaces.storage_client import IStorageManager
 from bubbaloo.utils.interfaces.services_validation import IValidation
 
 

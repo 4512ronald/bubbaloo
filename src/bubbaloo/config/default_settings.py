@@ -7,4 +7,4 @@ LOGGER = Logger()
 SPARK = GetSpark()
 CONTEXT = PipelineState()
 MEASURE = measure
-NAME = "Default Pipeline"
+PIPELINE_NAME = "Default Pipeline"
