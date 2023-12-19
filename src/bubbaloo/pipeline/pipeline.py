@@ -1,18 +1,17 @@
-from typing import Union, Dict, Callable, Any, List, Tuple, TYPE_CHECKING
+from typing import Union, Dict, Callable, Any, List, Tuple
 from pyspark.sql import SparkSession
 from bubbaloo.errors.errors import ExecutionError
 from bubbaloo.utils.functions.pipeline_stages_helper import validate_params, raise_error
 from bubbaloo.utils.interfaces.pipeline_logger import ILogger
 
-if TYPE_CHECKING:
-    from pyspark.sql import DataFrame
-    from pyspark.sql.streaming import DataStreamWriter, StreamingQuery
-    from bubbaloo.pipeline.stages.load import Load
-    from bubbaloo.pipeline.stages.transform import Transform
-    from bubbaloo.pipeline.stages.extract import Extract
-    from bubbaloo.services.pipeline.config import Config
-    from bubbaloo.services.pipeline.measure import Measure
-    from bubbaloo.services.pipeline.state import PipelineState
+from pyspark.sql import DataFrame
+from pyspark.sql.streaming import DataStreamWriter, StreamingQuery
+from bubbaloo.pipeline.stages.load import Load
+from bubbaloo.pipeline.stages.transform import Transform
+from bubbaloo.pipeline.stages.extract import Extract
+from bubbaloo.services.pipeline.config import Config
+from bubbaloo.services.pipeline.measure import Measure
+from bubbaloo.services.pipeline.state import PipelineState
 
 
 OutputStageType = DataFrame | Callable[..., None | DataFrame] | DataStreamWriter | None
