@@ -169,8 +169,6 @@ class Pipeline:
                 self._logger.error(error_message)
                 raise TypeError(error_message)
 
-        self._prepare_pipeline()
-
         return self
 
     def _initialize_and_execute_extract(self) -> DataFrame:
@@ -270,7 +268,7 @@ class Pipeline:
         except Exception as e:
             raise_error(self._logger, self.__class__.__name__, "Error during load stage", e)
 
-    def _prepare_pipeline(self) -> None:
+    def _prepare_pipeline(self) -> DataStreamWriter | None:
         """
         Prepares the pipeline for execution.
 
@@ -281,7 +279,7 @@ class Pipeline:
         transform = self._initialize_and_execute_transform(extract)
         load = self._initialize_and_execute_load(extract, transform)
 
-        self._pipeline = load
+        return load
 
     def _reset_pipeline(self) -> None:
         """
@@ -308,14 +306,14 @@ class Pipeline:
             Union[StreamingQuery, None, bool]: The result of the pipeline execution,
                 which can be a StreamingQuery, None, or a boolean indicating success or failure.
         """
-        load = self._pipeline
+        pipeline = self._prepare_pipeline()
         self._reset_pipeline()
 
         if not self._is_streaming:
             return
 
         try:
-            return load.start().awaitTermination()
+            return pipeline.start().awaitTermination()
         except Exception as e:
             error_message = "Error while starting the data write"
             self._logger.error(error_message)
