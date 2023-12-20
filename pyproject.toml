@@ -24,14 +24,13 @@ keywords = ["google-cloud-storage", "pyspark", "data pipeline"]
 Homepage = "https://github.com/4512ronald/bubbaloo"
 Issues = "https://github.com/4512ronald/bubbaloo/issues"
 
-
-[tool.setuptools]
-include_package_data = true
-
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
 [tool.pytest.ini_options]
 pythonpath = [
   "src"
+]
+addopts = [
+    "--import-mode=importlib",
 ]
