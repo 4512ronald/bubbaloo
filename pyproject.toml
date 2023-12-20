@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bubbaloo"
+version = "0.0.10"
+description = "This package is designed to make it easy to build data pipelines using pyspark"
+authors = [{ name = "Ronald Restrepo", email = "rarestrepoc@gmail.com" }]
+license = { file = "LICENSE" }
+readme = "README.md"
+dynamic = ["dependencies"]
+requires-python = ">=3.10.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 1 - Planning"
+]
+keywords = ["google-cloud-storage", "pyspark", "data pipeline"]
+
+[project.urls]
+
+Homepage = "https://github.com/4512ronald/bubbaloo"
+Issues = "https://github.com/4512ronald/bubbaloo/issues"
+
+
+[tool.setuptools]
+include_package_data = true
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
