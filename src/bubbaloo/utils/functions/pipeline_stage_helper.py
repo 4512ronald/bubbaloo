@@ -3,7 +3,7 @@ from typing import Any, Dict
 from pyspark.sql import SparkSession
 
 from bubbaloo.config import default_settings
-from bubbaloo.services.pipeline import PipelineState, Config
+from bubbaloo.services.pipeline import PipelineState, Config, Measure
 from bubbaloo.errors.errors import ExecutionError
 from bubbaloo.utils.interfaces.pipeline_logger import ILogger
 
@@ -50,7 +50,9 @@ def validate_params(params: Dict[str, Any]) -> Dict[str, Any]:
         'logger': ILogger,
         'spark': SparkSession,
         'context': PipelineState,
-        'conf': Config
+        'conf': Config,
+        'pipeline_name': str,
+        'measure': Measure
     }
 
     if "conf" not in params:
@@ -59,7 +61,7 @@ def validate_params(params: Dict[str, Any]) -> Dict[str, Any]:
     for param, expected_type in param_types.items():
 
         if param in params and not isinstance(params[param], expected_type):
-            raise ValueError(f"Expected '{param}' of type {expected_type.__name__}")
+            raise TypeError(f"Expected '{param}' of type {expected_type.__name__}")
 
         if param not in params:
             params[param] = default_params[param]

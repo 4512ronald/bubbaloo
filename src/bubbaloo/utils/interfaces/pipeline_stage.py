@@ -27,11 +27,11 @@ class StageAbstract(ABC):
         """
         Initializes the StageAbstract with default values.
         """
-        self.conf = None
-        self.spark = None
-        self.logger = None
-        self.context = None
-        self.measure = None
+        self.conf: Config | None = None
+        self.spark: SparkSession | None = None
+        self.logger: ILogger | None = None
+        self.context: PipelineState | None = None
+        self.measure: Measure | None = None
 
     def initialize(
             self,

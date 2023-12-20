@@ -23,7 +23,7 @@ class Load(StageAbstract, ABC):
     def execute(
             self,
             dataframe: DataFrame,
-            transform: Callable[..., None | DataFrame] | None
+            transform: Callable[..., None] | DataFrame | None
     ) -> DataStreamWriter | None:
         """
         Abstract method to execute the data loading process.

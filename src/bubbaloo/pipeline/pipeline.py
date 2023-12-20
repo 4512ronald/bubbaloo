@@ -1,11 +1,12 @@
 from typing import Union, Dict, Callable, Any, List, Tuple
-from pyspark.sql import SparkSession
-from bubbaloo.errors.errors import ExecutionError
-from bubbaloo.utils.functions.pipeline_stages_helper import validate_params, raise_error
-from bubbaloo.utils.interfaces.pipeline_logger import ILogger
 
+from pyspark.sql import SparkSession
 from pyspark.sql import DataFrame
 from pyspark.sql.streaming import DataStreamWriter, StreamingQuery
+
+from bubbaloo.errors.errors import ExecutionError
+from bubbaloo.utils.functions.pipeline_stage_helper import validate_params, raise_error
+from bubbaloo.utils.interfaces.pipeline_logger import ILogger
 from bubbaloo.pipeline.stages.load import Load
 from bubbaloo.pipeline.stages.transform import Transform
 from bubbaloo.pipeline.stages.extract import Extract
@@ -211,7 +212,7 @@ class Pipeline:
                 stages, which can be a modified DataFrame or a callable function.
         """
         transform_stages: List[StageType] = self._stages.get("transform")
-        transforms = dataframe
+        transformed_df = dataframe
 
         if not transform_stages:
             return
@@ -220,23 +221,23 @@ class Pipeline:
             stage.initialize(self._conf, self._spark, self._logger, self._context, self._measure)
 
             try:
-                result = stage.execute(transforms)
+                result = stage.execute(transformed_df)
                 self._named_stages[name] = result
                 if callable(result):
                     return result
                 elif isinstance(result, DataFrame):
-                    transforms = result
+                    transformed_df = result
                 else:
                     raise ValueError(f"Expected return a DataFrame or Callable, got {type(result)}")
             except Exception as e:
                 raise_error(self._logger, self.__class__.__name__, "Error during transform stage", e)
 
-        return transforms
+        return transformed_df
 
     def _initialize_and_execute_load(
             self,
             dataframe: DataFrame,
-            transform: Callable[..., None | DataFrame] | None
+            transform: Callable[..., None] | DataFrame | None
     ) -> DataStreamWriter | None:
 
         """
@@ -247,15 +248,21 @@ class Pipeline:
 
         Args:
             dataframe (DataFrame): The DataFrame to be loaded.
-            transform (Union[Callable[..., None | DataFrame], None]): An optional
+            transform (Callable[..., None] | DataFrame | None): An optional
                 transform to be applied during the load process.
 
         Returns:
             Union[DataStreamWriter, None]: The DataStreamWriter resulting from the
                 load stage, if applicable.
         """
+        if isinstance(transform, DataFrame):
+            dataframe = transform
+            transform = None
+
         name, load_stage = self._stages["load"]
+
         load_stage.initialize(self._conf, self._spark, self._logger, self._context, self._measure)
+
         try:
             result = load_stage.execute(dataframe, transform)
             self._named_stages[name] = result
@@ -290,7 +297,7 @@ class Pipeline:
             "load": None
         }
 
-    def execute(self) -> StreamingQuery | None | bool:
+    def execute(self) -> StreamingQuery | bool | None:
         """
         Executes the pipeline and manages the streaming query execution.
 
@@ -303,9 +310,11 @@ class Pipeline:
         """
         load = self._pipeline
         self._reset_pipeline()
+
+        if not self._is_streaming:
+            return
+
         try:
-            if not self._is_streaming:
-                return
             return load.start().awaitTermination()
         except Exception as e:
             error_message = "Error while starting the data write"
