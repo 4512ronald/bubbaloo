@@ -5,3 +5,5 @@ gcsfs~=2023.9.2
 pyspark~=3.4.1
 google~=3.0.0
 setuptools~=65.5.1
+pytest~=7.4.3
+toml~=0.10.2
