@@ -46,12 +46,15 @@ class LocalFileManager(IStorageManager):
     @staticmethod
     def delete(file_path: str) -> None:
         """
-        Deletes the file at the specified path.
+        Deletes the file or directory at the specified path.
 
         Args:
-            file_path (str): The path of the file to delete.
+            file_path (str): The path of the file or directory to delete.
         """
-        os.remove(file_path)
+        if os.path.isdir(file_path):
+            shutil.rmtree(file_path)
+        else:
+            os.remove(file_path)
 
     def move(self, source_files: List[str], destination_directory: str) -> None:
         """
@@ -67,6 +70,14 @@ class LocalFileManager(IStorageManager):
             os.makedirs(destination_directory)
 
         for file_path in source_files:
-            file_name = os.path.basename(file_path)
-            destination_path = os.path.join(destination_directory, file_name)
-            shutil.move(file_path, destination_path)
+            if not os.path.exists(file_path):
+                print(f"Source file does not exist: {file_path}")
+                continue
+            try:
+                file_name = os.path.basename(file_path)
+                destination_path = os.path.join(destination_directory, file_name)
+                shutil.move(file_path, destination_path)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print(f"Failed to move file {file_path} to {destination_directory}. Error: {e}")

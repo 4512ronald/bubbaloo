@@ -96,12 +96,17 @@ class CloudStorageManager(IStorageManager):
         Returns:
             Tuple[Bucket, Blob]: The bucket and blob object corresponding to the path.
         """
+        if "gs://" not in path:
+            raise ValueError(f"Invalid path: {path}")
         parts = path.replace("gs://", "").split("/")
         bucket_name = parts[0]
         blob_name = "/".join(parts[1:])
 
-        bucket = self._client.get_bucket(bucket_name)
-        blob = bucket.blob(blob_name)
+        try:
+            bucket = self._client.get_bucket(bucket_name)
+            blob = bucket.blob(blob_name)
+        except Exception as e:
+            raise ValueError(f"Invalid bucket name or blob name: {e}") from e
 
         return bucket, blob
 
