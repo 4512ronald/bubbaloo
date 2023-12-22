@@ -13,7 +13,7 @@ class PipelineState:
     """
 
     _instance = None
-    _resume = {}
+    _resume = []
 
     def __new__(cls, *args, **kwargs):
         """
@@ -35,9 +35,9 @@ class PipelineState:
         Sets up initial state values if the instance is being initialized for the first time.
         """
         if not hasattr(self, '_initialized'):
-            self._errors: Dict[str, str | List[Dict[str, list]]] = {
-                "dataProcessing": "No errors",
-                "pipelineStage": "No errors"
+            self._errors: Dict[str, str] = {
+                "DataProcessing": "No errors",
+                "PipelineExecution": "No errors"
             }
             self._duration: int = 0
             self._count: Dict[str, int] = {}
@@ -47,7 +47,7 @@ class PipelineState:
             self._initialized = True
 
     @property
-    def errors(self) -> Dict[str, str | List[Dict[str, list]]]:
+    def errors(self) -> Dict[str, str]:
         """
         Returns the current errors in the pipeline state.
 
@@ -147,7 +147,7 @@ class PipelineState:
         self._entity = entity
 
     @classmethod
-    def resume(cls) -> Dict[str, str]:
+    def _add_entry(cls) -> None:
         """
         Generates and returns a summary of the current pipeline state.
 
@@ -155,24 +155,42 @@ class PipelineState:
             Dict[str, str]: A summary of the pipeline state including entity, operation metrics,
                             errors, batch ID, duration, and timestamp.
         """
-        cls._resume = {
+        cls._resume.append({
             "entity": cls._instance.entity,
             "operationMetrics": cls._instance.count,
             "errors": cls._instance.errors,
             "batchId": cls._instance.batch_id,
             "duration": cls._instance.duration,
             "timestamp": datetime.now().isoformat(sep=" ", timespec="seconds"),
-        }
-
-        cls._reset()
-
-        return cls._resume
+        })
 
     @classmethod
-    def _reset(cls) -> None:
+    def reset(cls) -> None:
         """
         Resets the PipelineState singleton instance.
 
         This method allows for the reinitialization of the PipelineState for new pipeline executions.
         """
-        cls._instance = None
+        cls._add_entry()
+
+        cls._instance._errors = {
+            "DataProcessing": "No errors",
+            "PipelineExecution": "No errors"
+        }
+        cls._instance._duration = 0
+        cls._instance._count = {}
+        cls._instance._batch_id = 0
+        cls._instance._entity = ""
+
+    @classmethod
+    def resume(cls) -> List[Dict[str, str]]:
+        """
+        Returns the current pipeline state summary.
+
+        Returns:
+            List[Dict[str, str]]: The current pipeline state summary.
+        """
+
+        resume = cls._resume
+        cls._resume = []
+        return resume
