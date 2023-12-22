@@ -191,7 +191,7 @@ class Pipeline:
     def _initialize_and_execute_transform(
             self,
             dataframe: DataFrame = None
-    ) -> Callable[..., None | DataFrame] | None:
+    ) -> Callable[..., None] | DataFrame | None:
         """
         Initializes and executes the transform stages of the pipeline.
 
@@ -203,7 +203,7 @@ class Pipeline:
                 Defaults to None.
 
         Returns:
-            Union[Callable[..., None | DataFrame], None]: The result of the transform
+            Union[Callable[..., None] | DataFrame, None]: The result of the transform
                 stages, which can be a modified DataFrame or a callable function.
         """
         transform_stages: List[StageType] = self._stages.get("transform")

@@ -8,7 +8,7 @@ from bubbaloo.errors.errors import ExecutionError
 from bubbaloo.utils.interfaces.pipeline_logger import ILogger
 
 
-def get_default_params() -> Dict[str, Any]:
+def get_default_params(module: object) -> Dict[str, Any]:
     """
     Retrieves default parameters from the default_settings module.
 
@@ -20,8 +20,8 @@ def get_default_params() -> Dict[str, Any]:
         Dict[str, Any]: A dictionary containing default parameter values.
     """
     return {
-        key.lower(): getattr(default_settings, key)
-        for key in dir(default_settings)
+        key.lower(): getattr(module, key)
+        for key in dir(module)
         if key.isupper()
     }
 
@@ -44,7 +44,7 @@ def validate_params(params: Dict[str, Any]) -> Dict[str, Any]:
     Raises:
         ValueError: If a required parameter is missing or of incorrect type.
     """
-    default_params = get_default_params()
+    default_params = get_default_params(default_settings)
 
     param_types = {
         'logger': ILogger,
