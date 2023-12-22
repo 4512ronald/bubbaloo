@@ -3,7 +3,7 @@ from typing import Any, Dict
 from pyspark.sql import SparkSession
 
 from bubbaloo.config import default_settings
-from bubbaloo.services.pipeline import PipelineState, Config, Measure
+from bubbaloo.services.pipeline import PipelineState, Config
 from bubbaloo.errors.errors import ExecutionError
 from bubbaloo.utils.interfaces.pipeline_logger import ILogger
 
@@ -52,7 +52,6 @@ def validate_params(params: Dict[str, Any]) -> Dict[str, Any]:
         'context': PipelineState,
         'conf': Config,
         'pipeline_name': str,
-        'measure': Measure
     }
 
     if "conf" not in params:

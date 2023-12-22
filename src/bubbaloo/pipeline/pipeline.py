@@ -5,13 +5,13 @@ from pyspark.sql import DataFrame
 from pyspark.sql.streaming import DataStreamWriter, StreamingQuery
 
 from bubbaloo.errors.errors import ExecutionError
+from bubbaloo.services.pipeline import measure
 from bubbaloo.utils.functions.pipeline_stage_helper import validate_params, raise_error
 from bubbaloo.utils.interfaces.pipeline_logger import ILogger
 from bubbaloo.pipeline.stages.load import Load
 from bubbaloo.pipeline.stages.transform import Transform
 from bubbaloo.pipeline.stages.extract import Extract
 from bubbaloo.services.pipeline.config import Config
-from bubbaloo.services.pipeline.measure import Measure
 from bubbaloo.services.pipeline.state import PipelineState
 
 
@@ -42,8 +42,6 @@ class Pipeline:
                                   necessary state information required across different stages.
         _conf (Config): Configuration settings specific to the pipeline, encapsulating various
                         operational parameters and settings.
-        _measure (Measure): An instance of a Measure class, used for performance tracking and
-                            measurement throughout the pipeline's execution.
         _is_streaming (bool): A boolean flag indicating whether the pipeline is configured
                               for streaming data processing.
         _named_stages (Dict[str, Union[DataFrame, Callable[..., None | DataFrame], DataStreamWriter, None]]):
@@ -86,7 +84,6 @@ class Pipeline:
         self._spark: SparkSession = self._params.get("spark")
         self._context: PipelineState = self._params.get("context")
         self._conf: Config = self._params.get("conf")
-        self._measure: Measure = self._params.get("measure")
         self._is_streaming: bool = False
         self._named_stages: Dict[str, OutputStageType] = {}
         self._pipeline: DataStreamWriter | None = None
@@ -182,7 +179,7 @@ class Pipeline:
             DataFrame: The DataFrame resulting from the extract stage.
         """
         name, extract_stage = self._stages["extract"]
-        extract_stage.initialize(self._conf, self._spark, self._logger, self._context, self._measure)
+        extract_stage.initialize(self._conf, self._spark, self._logger, self._context)
         try:
             dataframe = extract_stage.execute()
             self._named_stages[name] = dataframe
@@ -216,7 +213,7 @@ class Pipeline:
             return
 
         for name, stage in transform_stages:
-            stage.initialize(self._conf, self._spark, self._logger, self._context, self._measure)
+            stage.initialize(self._conf, self._spark, self._logger, self._context)
 
             try:
                 result = stage.execute(transformed_df)
@@ -259,7 +256,7 @@ class Pipeline:
 
         name, load_stage = self._stages["load"]
 
-        load_stage.initialize(self._conf, self._spark, self._logger, self._context, self._measure)
+        load_stage.initialize(self._conf, self._spark, self._logger, self._context)
 
         try:
             result = load_stage.execute(dataframe, transform)
@@ -295,6 +292,7 @@ class Pipeline:
             "load": None
         }
 
+    @measure.time
     def execute(self) -> StreamingQuery | bool | None:
         """
         Executes the pipeline and manages the streaming query execution.

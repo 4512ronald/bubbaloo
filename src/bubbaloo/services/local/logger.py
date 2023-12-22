@@ -26,7 +26,7 @@ class Logger(ILogger):
             name: Optional; The name of the logger. Defaults to "bubbaloo" if None.
         """
         if name is None:
-            name = "bubbaloo"
+            name = "Bubbaloo"
 
         self.spark = GetSpark()
         self.logger = self.spark.sparkContext._jvm.org.apache.log4j.Logger.getLogger(name) # noqa

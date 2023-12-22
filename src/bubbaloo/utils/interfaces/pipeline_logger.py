@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class ILogger(ABC):
     """
     Abstract base class for a logging interface.

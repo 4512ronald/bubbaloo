@@ -1,12 +1,10 @@
 import json
-from json import JSONDecodeError
 from typing import List, Dict, Any
 
 from gcsfs import GCSFileSystem
 import pyarrow as pa
 import pyarrow.parquet as pq
-from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col
+from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType
 
 from bubbaloo.services.pipeline.state import PipelineState
@@ -131,117 +129,3 @@ def get_message(error: Exception) -> str:
     """
     formatted_error = json.loads(str(error))
     return formatted_error["message"]
-
-
-def identify_error(error: Exception) -> str:
-    """
-    Identifies and returns a user-friendly error message based on the given exception.
-
-    Maps known error messages to more descriptive, user-friendly ones. If the error
-    is not recognized, returns a default message with the original error string.
-
-    Args:
-        error (Exception): The exception to identify.
-
-    Returns:
-        str: A user-friendly description of the error.
-    """
-    exception_str = str(error).lower()
-
-    error_mapping: Dict[str, str] = {
-        "is not a parquet file": "They are not Parquet files",
-        "unable to infer schema for parquet. it must be specified manually.": "Error while reading file"
-    }
-
-    return next(
-        (
-            output_message
-            for error_message, output_message in error_mapping.items()
-            if error_message in exception_str
-        ),
-        f"Unknown error: {exception_str}"
-    )
-
-
-def _get_stats(history: DataFrame, statistic: str) -> int:
-    """
-    Retrieves a specific statistic from the operationMetrics column of a DataFrame.
-
-    Args:
-        history (DataFrame): A DataFrame containing operation metrics.
-        statistic (str): The name of the statistic to retrieve.
-
-    Returns:
-        int: The value of the requested statistic.
-    """
-    ordered_history = history.orderBy(col("timestamp").desc())
-
-    try:
-        stat = ordered_history.select(col("operationMetrics").getItem(statistic)).take(1)[0][0]
-    except (IndexError, TypeError):
-        stat = 0
-
-    return stat
-
-
-def get_stats(spark: SparkSession, path: str) -> Dict[str, int]:
-    """
-     Retrieves various statistics for operations performed on a Delta table.
-
-     Gathers statistics like the number of rows updated, inserted, or deleted for the
-     last operation performed on a Delta table, identified by its path.
-
-     Args:
-         spark (SparkSession): The SparkSession to execute SQL queries.
-         path (str): The path to the Delta table.
-
-     Returns:
-         Dict[str, int]: A dictionary containing various statistics.
-     """
-    count = spark.sql(f"SELECT COUNT(*) FROM delta.`{path}`")
-
-    history = spark.sql(f"DESCRIBE HISTORY delta.`{path}`")
-
-    last_operation = (
-        history
-        .filter(~col("operation").isin(["OPTIMIZE", "VACUUM END", "VACUUM START"]))
-        .orderBy(col("timestamp").desc())
-        .select(col("operation"))
-        .first()[0]
-    )
-
-    filtered_history = history.where(col("operation") == last_operation)
-
-    if last_operation == "MERGE":
-        return {
-            "numRowsUpdated": _get_stats(filtered_history, "numTargetRowsUpdated"),
-            "numRowsInserted": _get_stats(filtered_history, "numTargetRowsInserted"),
-            "numRows": count.take(1)[0][0]
-        }
-
-    deletion_history = history.where(col("operation") == "DELETE")
-
-    return {
-        "numOutputRows": _get_stats(filtered_history, "numOutputRows"),
-        "numDeletedRows": _get_stats(deletion_history, "numDeletedRows"),
-        "numRows": count.take(1)[0][0]
-    }
-
-
-def get_error(error: Exception) -> Dict[str, str]:
-    """
-    Attempts to parse an exception into a JSON-formatted dictionary.
-
-    If the exception cannot be parsed as JSON, returns a dictionary with the error
-    message as a string.
-
-    Args:
-        error (Exception): The exception to parse.
-
-    Returns:
-        Dict[str, str]: A dictionary representation of the error.
-    """
-    try:
-        return json.loads(str(error))
-    except JSONDecodeError:
-        return {"error": str(error)}

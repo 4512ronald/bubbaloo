@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 
 from pyspark.sql import SparkSession
+
 from bubbaloo.services.pipeline.config import Config
 from bubbaloo.services.pipeline.state import PipelineState
-from bubbaloo.services.pipeline.measure import Measure
 from bubbaloo.utils.interfaces.pipeline_logger import ILogger
 
 
@@ -20,7 +20,6 @@ class StageAbstract(ABC):
         spark (SparkSession): Spark session to be used in the stage.
         logger (ILogger): Logger for logging messages.
         context (PipelineState): State of the pipeline, carrying contextual information.
-        measure (Measure): Utility for measuring performance and other metrics.
     """
 
     def __init__(self):
@@ -31,7 +30,6 @@ class StageAbstract(ABC):
         self.spark: SparkSession | None = None
         self.logger: ILogger | None = None
         self.context: PipelineState | None = None
-        self.measure: Measure | None = None
 
     def initialize(
             self,
@@ -39,7 +37,6 @@ class StageAbstract(ABC):
             spark: SparkSession,
             logger: ILogger,
             context: PipelineState,
-            measure: Measure
     ) -> None:
         """
         Initializes the stage with the necessary components.
@@ -52,13 +49,11 @@ class StageAbstract(ABC):
             spark (SparkSession): Spark session for the stage.
             logger (ILogger): Logger for the stage.
             context (PipelineState): Contextual state of the pipeline.
-            measure (Measure): Measurement tool for the stage.
         """
         self.conf = conf
         self.spark = spark
         self.logger = logger
         self.context = context
-        self.measure = measure
 
     @abstractmethod
     def execute(self, *args, **kwargs):
