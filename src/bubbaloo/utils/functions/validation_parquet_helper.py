@@ -129,3 +129,30 @@ def get_message(error: Exception) -> str:
     """
     formatted_error = json.loads(str(error))
     return formatted_error["message"]
+
+
+def identify_error(error: Exception) -> str:
+    """
+    Identify the error message and return a corresponding error description.
+
+    Args:
+        error (Exception): The error object.
+
+    Returns:
+        str: The error description.
+    """
+    exception_str = str(error).lower()
+
+    error_mapping: Dict[str, str] = {
+        "is not a parquet file": "They are not Parquet files",
+        "unable to infer schema for parquet. it must be specified manually.": "Error while reading file"
+    }
+
+    return next(
+        (
+            output_message
+            for error_message, output_message in error_mapping.items()
+            if error_message in exception_str
+        ),
+        f"Unknown error: {exception_str}"
+    )

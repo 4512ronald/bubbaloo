@@ -17,7 +17,8 @@ from bubbaloo.utils.functions.validation_parquet_helper import (
     compare_schemas,
     get_pyarrow_schema,
     get_message,
-    identify_error, validate_params
+    identify_error,
+    validate_params
 )
 from bubbaloo.utils.interfaces.storage_client import IStorageManager
 from bubbaloo.utils.interfaces.services_validation import IValidation
@@ -25,7 +26,7 @@ from bubbaloo.utils.interfaces.services_validation import IValidation
 
 class Parquet(IValidation):
 
-    validated = False
+    # TODO Generalizar el uso de parquet para que no dependa de GCP
 
     def __init__(self, **kwargs) -> None:
         self._params: Dict[str, Any] = validate_params(kwargs)
@@ -35,7 +36,7 @@ class Parquet(IValidation):
         self.conf: Config = self._params.get("conf")
         self.spark: SparkSession = self._params.get("spark")
         self.logger: Logger = self._params.get("logger")
-        self.gcs_client: IStorageManager = self._params.get("storage_manager")
+        self.storage_client: IStorageManager = self._params.get("storage_manager")
         self.error_context: PipelineState = self._params.get("context")
         self.time_delta: int = self._params.get("time_delta")
         self.project: str = self._params.get("project")
@@ -43,6 +44,8 @@ class Parquet(IValidation):
         self.source_path: str = self._params.get("source_path")
 
     def _get_file_paths(self, blobs: List[Blob]) -> Generator[str, None, None]:
+
+        # TODO Quitar dependencia de GCP Blob
 
         days_ago = datetime.now(timezone.utc).date() - timedelta(days=self.time_delta)
 
@@ -85,7 +88,7 @@ class Parquet(IValidation):
 
         invalid_path_blobs = [element["path"] for element in invalid_blobs]
 
-        self.gcs_client.move(invalid_path_blobs, self.error_path)
+        self.storage_client.move(invalid_path_blobs, self.error_path)
 
         self.logger.info(
             f"Corrupted files have been moved to the following location in storage: \
@@ -100,9 +103,11 @@ class Parquet(IValidation):
             for key, items in itertools.groupby(sorted_list, key=lambda item: item["error"])
         ]
 
-        self.error_context.errors["dataProcessing"] = validation_errors
+        self.error_context.errors["dataProcessing"] = str(validation_errors)
 
     def _validate_file(self, path: str) -> Dict[str, str] | None:
+
+        # TODO Quitar dependencia de GCP _get_pyarrow_schema
 
         try:
             self._verify_parquet_file(path)
@@ -126,9 +131,11 @@ class Parquet(IValidation):
 
         self.logger.info("Checking integrity of the data...")
 
+        # TODO Quitar dependencia de GCP list blobs
+
         blobs = [
             blob
-            for blob in self.gcs_client.list(self.conf.source.main_source)
+            for blob in self.storage_client.list(self.conf.source.main_source)
             if not (blob.name.endswith("/_SUCCESS") or blob.name.endswith("/"))
         ]
 
