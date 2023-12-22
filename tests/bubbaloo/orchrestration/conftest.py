@@ -18,8 +18,6 @@ def flows_to_execute_with_errors():
 def flows_dir(tmp_path):
     flows_dir = tmp_path / "flows"
     flows_dir.mkdir()
-
-    print("-------->", str(flows_dir))
     return flows_dir
 
 
@@ -27,8 +25,6 @@ def flows_dir(tmp_path):
 def entity1_dir(flows_dir):
     entity1_dir = Path(flows_dir) / "entity1"
     entity1_dir.mkdir()
-
-    print("--------> entity1:", str(entity1_dir))
     return entity1_dir
 
 
@@ -127,7 +123,8 @@ def load_module_entity_1(entity1_dir):
 
         class LoadStage(Load):
 
-            def execute(self, dataframe: DataFrame, transform: Callable[..., None] | DataFrame | None) -> DataStreamWriter | None:
+            def execute(self, dataframe: DataFrame, 
+                        transform: Callable[..., None] | DataFrame | None) -> DataStreamWriter | None:
                 return dataframe.coalesce(1).write.format("parquet").mode("overwrite").save(self.conf.trusted_path)
         """)
     load_module_path.write_text(code)
@@ -193,7 +190,8 @@ def load_module_entity_2(entity2_dir):
 
         class LoadStage(Load):
 
-            def execute(self, dataframe: DataFrame, transform: Callable[..., None] | DataFrame | None) -> DataStreamWriter | None:
+            def execute(self, dataframe: DataFrame, 
+                        transform: Callable[..., None] | DataFrame | None) -> DataStreamWriter | None:
                 return dataframe.coalesce(1).write.format("parquet").mode("overwrite").save(self.conf.trusted_path2)
         """)
     load_module_path.write_text(code)
@@ -243,7 +241,8 @@ def load_module_entity_3(entity3_dir):
 
         class LoadStage(Load):
 
-            def execute(self, dataframe: DataFrame, transform: Callable[..., None] | DataFrame | None) -> DataStreamWriter | None:
+            def execute(self, dataframe: DataFrame, 
+                        transform: Callable[..., None] | DataFrame | None) -> DataStreamWriter | None:
                 raise Exception("Error")
         """)
     load_module_path.write_text(code)

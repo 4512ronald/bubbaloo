@@ -54,8 +54,13 @@ def temp_config_file(raw_temp_dir, trusted_temp_dir):
 
 
 @pytest.fixture(scope="session")
-def config(temp_config_file):
-    return Config("development", temp_config_file)
+def env():
+    return "development"
+
+
+@pytest.fixture(scope="session")
+def config(temp_config_file, env):
+    return Config(env, temp_config_file)
 
 
 @pytest.fixture(scope="session")
