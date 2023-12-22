@@ -5,7 +5,6 @@ from bubbaloo.errors.errors import ExecutionError
 from bubbaloo.pipeline.pipeline import Pipeline
 from bubbaloo.pipeline.stages import Extract, Transform, Load
 from bubbaloo.services.pipeline.config import Config
-from bubbaloo.services.pipeline.measure import Measure
 from bubbaloo.services.pipeline.state import PipelineState
 from bubbaloo.services.local import Logger
 from pyspark.sql import SparkSession
@@ -27,7 +26,6 @@ class TestPipelineInitialization:
         assert isinstance(pipeline._spark, SparkSession)
         assert isinstance(pipeline._context, PipelineState)
         assert isinstance(pipeline._conf, Config)
-        assert isinstance(pipeline._measure, Measure)
 
     def test_pipeline_invalid_parameters(self, config, spark, logger, state, measure):
         with pytest.raises(TypeError):
@@ -70,16 +68,6 @@ class TestPipelineInitialization:
                 measure=measure
             )
 
-        with pytest.raises(TypeError):
-            Pipeline(
-                pipeline_name="test_pipeline",
-                logger=logger,
-                spark=spark,
-                context=state,
-                conf=config,
-                measure="invalid_measure"
-            )
-
         with pytest.raises(ValueError):
             Pipeline(
                 pipeline_name="test_pipeline",
@@ -97,7 +85,6 @@ class TestPipelineInitialization:
         assert pipeline._spark is not None
         assert pipeline._context is not None
         assert isinstance(pipeline._conf, Config)
-        assert pipeline._measure is not None
 
     def test_name(self, config, spark, logger, state, measure):
         pipeline = Pipeline(
@@ -350,10 +337,7 @@ class TestPipelineMethods:
             ("load", batch_load)
         ])
 
-        assert str(pipeline) == ("name: test_pipeline, stages: {'extract': DataFrame[ComunicacionID: string, "
-                                 "UserID: string, Fecha: string, Estado: string], 'transform': "
-                                 'DataFrame[ComunicacionID: string, UserID: string, Fecha: string, Estado: '
-                                 "string, descripcion: string], 'load': None}")
+        assert str(pipeline) == "name: test_pipeline, stages: {}"
 
     def test_is_streaming_property(self, config, spark, logger, state, measure, streaming_extract, streaming_transform,
                                    streaming_load):
@@ -370,7 +354,7 @@ class TestPipelineMethods:
             ("extract", streaming_extract),
             ("transform", streaming_transform),
             ("load", streaming_load)
-        ])
+        ]).execute()
 
         assert pipeline.is_streaming is True
 
@@ -389,7 +373,7 @@ class TestPipelineMethods:
             ("extract", batch_extract),
             ("transform", batch_transform_1),
             ("load", batch_load)
-        ])
+        ]).execute()
 
         assert len(pipeline.named_stages) == 3
         assert "extract" in pipeline.named_stages
