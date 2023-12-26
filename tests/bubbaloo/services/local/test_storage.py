@@ -40,7 +40,7 @@ class TestLocalFileManager:
         destination_file = os.path.join(destination_directory, "file.txt")
         with open(source_file, "w") as f:
             f.write("test")
-        file_manager.copy(source_file, destination_file)
+        file_manager._copy(source_file, destination_file)
         assert os.path.exists(destination_file)
 
     def test_delete(self, file_manager, source_directory):
@@ -72,3 +72,20 @@ class TestLocalFileManager:
         for file_path in files:
             file_manager.delete(file_path)
             assert not os.path.exists(file_path)
+
+    def test_filter(self, file_manager):
+        file1 = "/path/to/file1"
+        file2 = "/path/to/file2"
+        file3 = "/path/to/file3"
+
+        files = [file1, file2, file3]
+
+        def filter_func(file):
+            return file if file != "/path/to/file2" else None
+
+        filtered_files = file_manager.filter(files, filter_func)
+
+        assert len(filtered_files) == 2
+        assert file1 in filtered_files
+        assert file2 not in filtered_files
+        assert file3 in filtered_files

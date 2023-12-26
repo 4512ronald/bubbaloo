@@ -1,4 +1,5 @@
-from typing import List, Tuple
+import os
+from typing import List, Tuple, Callable, Any
 import re
 
 from bubbaloo.utils.interfaces.storage_client import IStorageManager
@@ -26,7 +27,7 @@ class CloudStorageManager(IStorageManager):
     """
     _instance = None
 
-    def __new__(cls, project: str):
+    def __new__(cls, project: str, credentials: str = None, **kwargs):
         """
         Creates a new instance of the class or returns the existing one.
 
@@ -43,7 +44,7 @@ class CloudStorageManager(IStorageManager):
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, project: str) -> None:
+    def __init__(self, project: str, credentials: str = None, **kwargs) -> None:
         """
         Initializes the CloudStorageManager instance with a specific Google Cloud project.
 
@@ -52,7 +53,10 @@ class CloudStorageManager(IStorageManager):
         """
         if not self._initialized:
             self.project: str = project
-            self._client: Client = storage.Client(self.project)
+            if credentials is None:
+                self._client: Client = storage.Client(self.project, **kwargs)
+            else:
+                self._client: Client = storage.Client.from_service_account_json(credentials)
             self._bucket: Bucket | None = None
             self._initialized = True
 
@@ -110,7 +114,7 @@ class CloudStorageManager(IStorageManager):
 
         return bucket, blob
 
-    def copy(
+    def _copy(
             self,
             source_bucket: Bucket,
             source_blob: Blob,
@@ -126,14 +130,12 @@ class CloudStorageManager(IStorageManager):
             destination_bucket_name (str): The name of the destination bucket.
             destination_blob_name (str): The name for the blob in the destination bucket.
         """
-        destination_generation_match_precondition = 0
         destination_bucket = self._client.get_bucket(destination_bucket_name)
 
         source_bucket.copy_blob(
             source_blob,
             destination_bucket,
             destination_blob_name,
-            if_generation_match=destination_generation_match_precondition
         )
 
     @staticmethod
@@ -162,5 +164,36 @@ class CloudStorageManager(IStorageManager):
             source_bucket, source_blob = self._get_bucket_and_object(source_blob_path)
             destination_blob_name = f'{destination_folder.rstrip("/")}/{source_blob.name.split("/")[-1]}'
 
-            self.copy(source_bucket, source_blob, destination_bucket_name, destination_blob_name)
+            self._copy(source_bucket, source_blob, destination_bucket_name, destination_blob_name)
             self.delete(source_blob)
+
+    def filter(self, blobs: List[Blob], filter_fuc: Callable[..., str]) -> List[str]:
+
+        return [blob for blob in map(lambda blob: filter_fuc(blob), blobs) if blob is not None]
+
+    def copy(self, source_blob_paths: List[str], destination_path: str) -> None:
+        """
+        Copies or downloads blobs based on the destination path.
+
+        Args:
+            source_blob_paths (List[str]): A list of paths for the blobs.
+            destination_path (str): The destination path, either a GCS path or a local path.
+        """
+        if destination_path.startswith("gs://"):
+            destination_bucket_name, destination_folder = re.findall(r"gs://([a-z0-9_\-.]+)/(.+)", destination_path)[0]
+            destination_folder = f"{destination_folder}/" if not destination_folder.endswith(
+                "/") else destination_folder
+
+            for source_blob_path in source_blob_paths:
+                source_bucket, source_blob = self._get_bucket_and_object(source_blob_path)
+                destination_blob_name = f'{destination_folder.rstrip("/")}/{source_blob.name.split("/")[-1]}'
+                self._copy(source_bucket, source_blob, destination_bucket_name, destination_blob_name)
+        else:
+            for source_blob_path in source_blob_paths:
+                source_bucket, source_blob = self._get_bucket_and_object(source_blob_path)
+                destination_file_path = os.path.join(destination_path, source_blob.name.split("/")[-1])
+
+                try:
+                    source_blob.download_to_filename(destination_file_path)
+                except Exception as e:
+                    raise ValueError(f"Error downloading blob {source_blob.name}: {e}") from e

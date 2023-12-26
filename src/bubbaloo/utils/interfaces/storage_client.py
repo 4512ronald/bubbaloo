@@ -70,3 +70,17 @@ class IStorageManager(ABC):
             **kwargs: Arbitrary keyword arguments.
         """
         pass
+
+    @abstractmethod
+    def filter(self, *args, **kwargs):
+        """
+        Abstract method to filter items within the storage.
+
+        Implementing classes should define the specific behavior for filtering items,
+        potentially based on provided arguments and keyword arguments.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        pass

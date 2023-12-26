@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import List
+from typing import List, Callable
 
 from bubbaloo.utils.interfaces.storage_client import IStorageManager
 
@@ -33,7 +33,8 @@ class LocalFileManager(IStorageManager):
         files = [os.path.join(source, f) for f in os.listdir(source)]
         return files
 
-    def copy(self, source_path: str, destination_path: str) -> None:
+    @staticmethod
+    def _copy(source_path: str, destination_path: str) -> None:
         """
         Copies a file from the source path to the destination path.
 
@@ -42,6 +43,11 @@ class LocalFileManager(IStorageManager):
             destination_path (str): The path to copy the file to.
         """
         shutil.copy2(source_path, destination_path)
+
+    def copy(self, source_files: List[str], destination_path: str) -> None:
+
+        for source_path in source_files:
+            self._copy(source_path, destination_path)
 
     @staticmethod
     def delete(file_path: str) -> None:
@@ -81,3 +87,7 @@ class LocalFileManager(IStorageManager):
                     os.remove(file_path)
             except Exception as e:
                 print(f"Failed to move file {file_path} to {destination_directory}. Error: {e}")
+
+    def filter(self, blobs: List[str], filter_fuc: Callable[..., str]) -> List[str]:
+
+        return [blob for blob in map(lambda blob: filter_fuc(blob), blobs) if blob is not None]
