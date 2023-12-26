@@ -3,6 +3,7 @@ import inspect
 import importlib
 import re
 from copy import deepcopy
+from pathlib import Path
 from typing import Dict, Any, List, Tuple, Type
 
 from bubbaloo.pipeline.stages.extract import Extract
@@ -77,7 +78,7 @@ class Orchestrator:
         return [(name, flow.named_stages) for name, flow in self._pipeline_list]
 
     @staticmethod
-    def _get_module_names_from_package(directory_path: str) -> List[str]:
+    def _get_module_names_from_package(directory_path: str | Path) -> List[str]:
         """Retrieves module names from a given directory path.
 
         Args:
