@@ -1,6 +1,8 @@
 import os
 import inspect
 import importlib
+import sys
+import zipfile
 import re
 from copy import deepcopy
 from pathlib import Path
@@ -19,32 +21,37 @@ StageType = Transform | Load | Extract
 
 
 class Orchestrator:
-    """Orchestrator for managing and executing ETL pipelines.
+    """
+    Orchestrator class for managing and executing a series of data pipelines.
 
-    This class orchestrates the execution of ETL (Extract, Transform, Load) pipelines. It is responsible for
-    initializing pipelines, executing them, and handling the overall flow of data processing tasks.
+    This class is responsible for setting up and executing multiple data pipelines based on the provided configuration.
+    It handles the orchestration of various pipeline stages, including transforming, loading, and extracting data.
 
     Attributes:
-        _path_to_flows (str): The file path to the flow definitions.
-        _flows_to_execute (List[str]): A list of flow names to be executed.
-        _flows_dir_name (str): The directory name where flows are located.
-        _params (Dict[str, Any]): Parameters for pipeline execution.
-        _conf (Config): Configuration object for the pipeline.
-        _logger (ILogger): Logger for logging information.
-        _context (PipelineState): State of the pipeline during execution.
+        _path_to_flows (str): The file path or module path to the flow definitions.
+        _flows_to_execute (List[str]): A list of flow names to execute.
+        _flows_dir_name (str): The directory name where flows are stored.
+        _params (Dict[str, Any]): Dictionary of parameters needed for pipeline execution.
+        _conf (Config): Configuration object for the orchestrator.
+        _logger (ILogger): Logger instance for logging messages.
+        _context (PipelineState): State object for managing pipeline state.
         _pipeline_list (List[Tuple[str, Pipeline]]): List of pipelines to be executed.
-        _pipeline_stage_types (Tuple[Type]): Tuple of pipeline stage types (Transform, Load, Extract).
-        _resume (List[Dict[str, str]] | str): Execution resume information.
-
-    Args:
-        path_to_flows (str | object): The path or module containing the flow definitions.
-        flows_to_execute (List[str], optional): Specific flows to execute. Defaults to all flows if None.
-        **kwargs: Arbitrary keyword arguments for pipeline configuration.
+        _pipeline_stage_types (Tuple[Type[Transform], Type[Load], Type[Extract]]): Tuple of pipeline stage types.
+        _resume (List[Dict[str, str]] | str): Summary of pipeline execution results.
     """
 
     def __init__(self, path_to_flows: str | object, flows_to_execute: List[str] | None = None, **kwargs):
-        """Initializes the Orchestrator with given parameters."""
-        self._path_to_flows: str = path_to_flows.__path__[0] if inspect.ismodule(path_to_flows) else path_to_flows
+        """
+        Initializes the Orchestrator with the path to pipeline flows, the list of flows to execute, and additional
+        parameters.
+
+        Args:
+            path_to_flows (str | object): The file path or module path where flow definitions are located.
+            flows_to_execute (List[str] | None): Optional list of flow names to execute. Executes all flows if None.
+            **kwargs: Additional keyword arguments for pipeline configuration.
+        """
+
+        self._path_to_flows: str = self._get_working_path(path_to_flows)
         self._flows_to_execute: List[str] = flows_to_execute if flows_to_execute is not None else []
         self._flows_dir_name: str = self._path_to_flows.split("/")[-1]
         self._params: Dict[str, Any] = validate_params(kwargs)
@@ -58,11 +65,12 @@ class Orchestrator:
 
     @property
     def resume(self) -> List[Dict[str, str]] | str:
-        """Provides a summary of the executed flows.
+        """
+        Property to get the summary of pipeline execution results.
 
         Returns:
-            List[Dict[str, str]] | str: A list of dictionaries summarizing each executed flow or a message if not
-                                        executed.
+            List[Dict[str, str]] | str: Summary of executed pipelines or a message if no pipelines have been executed
+            yet.
         """
         if not self._resume:
             return "the flows are not executed yet"
@@ -70,19 +78,62 @@ class Orchestrator:
 
     @property
     def flows_to_execute(self) -> List[Tuple[str, Dict[str, Any]]]:
-        """Lists the flows that are set to be executed.
+        """
+        Property to get the list of flows to be executed along with their named stages.
 
         Returns:
-            List[Tuple[str, Dict[str, Any]]]: A list of tuples containing flow names and their corresponding stages.
+            List[Tuple[str, Dict[str, Any]]]: List of tuples containing flow names and their corresponding named stages.
         """
         return [(name, flow.named_stages) for name, flow in self._pipeline_list]
 
-    @staticmethod
-    def _get_module_names_from_package(directory_path: str | Path) -> List[str]:
-        """Retrieves module names from a given directory path.
+    def _get_working_path(self, path_to_flows: str) -> str:
+        """
+        Determines the working path for pipeline flows.
 
         Args:
-            directory_path (str): The directory path to search for modules.
+            path_to_flows (str): The file path or module path to the flow definitions.
+
+        Returns:
+            str: The determined working path for the flows.
+        """
+        tmp_path = path_to_flows.__path__[0] if inspect.ismodule(path_to_flows) else path_to_flows
+        path_parts = tmp_path.split("/")
+        for i in range(len(path_parts)):
+            partial_path = "/".join(path_parts[:i + 1])
+            if zipfile.is_zipfile(partial_path):
+                result = self._handle_zip_file(partial_path, "/".join(path_parts[i + 1:]))
+                break
+        else:
+            result = tmp_path
+        return result
+
+    @staticmethod
+    def _handle_zip_file(zip_path: str, sub_path: str):
+        """
+        Handles the extraction and setup of pipeline flows contained within a zip file.
+
+        Args:
+            zip_path (str): Path to the zip file containing the flows.
+            sub_path (str): Sub-path within the zip file to extract.
+
+        Returns:
+            str: Path to the extracted flow definitions.
+        """
+        working_directory = os.getcwd()
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(working_directory)
+        base_dir = os.path.join(working_directory, sub_path.split('/')[0])
+        if base_dir not in sys.path:
+            sys.path.insert(0, base_dir)
+        return os.path.join(working_directory, sub_path)
+
+    @staticmethod
+    def _get_module_names_from_package(directory_path: str | Path) -> List[str]:
+        """
+        Retrieves the names of Python modules from a given directory path.
+
+        Args:
+            directory_path (str | Path): The directory path containing Python modules.
 
         Returns:
             List[str]: A list of module names found in the directory.
@@ -98,13 +149,14 @@ class Orchestrator:
         return module_names
 
     def _get_pipeline_phases_from_module(self, module: object) -> List[Tuple[str, StageType]]:
-        """Extracts pipeline phases from a given module.
+        """
+        Extracts pipeline phases from a given module.
 
         Args:
             module (object): The module from which to extract pipeline phases.
 
         Returns:
-            List[Tuple[str, StageType]]: A list of tuples with stage names and their corresponding class instances.
+            List[Tuple[str, StageType]]: List of tuples containing phase names and their corresponding stage objects.
         """
         pipeline_phase: List[Tuple[str, StageType]] = []
         for name, obj in inspect.getmembers(module):
@@ -117,13 +169,14 @@ class Orchestrator:
         return pipeline_phase
 
     def _get_pipeline_phases_from_package(self, flow_name: str) -> List[Tuple[str, StageType]]:
-        """Retrieves pipeline phases from a package corresponding to a flow.
+        """
+        Retrieves pipeline phases from a package representing a flow.
 
         Args:
-            flow_name (str): The name of the flow for which to retrieve pipeline phases.
+            flow_name (str): Name of the flow whose phases are to be retrieved.
 
         Returns:
-            List[Tuple[str, StageType]]: A list of tuples containing stage names and their instances for the flow.
+            List[Tuple[str, StageType]]: List of tuples containing phase names and their corresponding stage objects.
         """
         pipeline_phases: List[Tuple[str, StageType]] = []
 
@@ -139,7 +192,9 @@ class Orchestrator:
         return pipeline_phases
 
     def _get_flows_to_execute(self):
-        """Determines the flows to be executed based on the given configuration."""
+        """
+        Identifies and sets up the flows to be executed by the Orchestrator.
+        """
         for flow_name in os.listdir(self._path_to_flows):
             if not self._flows_to_execute or flow_name in self._flows_to_execute:
                 pipeline_phases = self._get_pipeline_phases_from_package(flow_name)
@@ -148,10 +203,10 @@ class Orchestrator:
                 self._pipeline_list.append((flow_name, pipeline))
 
     def execute(self):
-        """Executes the configured pipelines.
+        """
+        Executes the configured pipelines.
 
-        This method iterates over the list of pipelines and executes each one, handling any exceptions that occur
-        and logging the progress and results.
+        This method runs each pipeline in the list of flows to execute, handling errors and logging as necessary.
         """
         for flow_name, pipeline in self._pipeline_list:
             self._context.entity = flow_name
