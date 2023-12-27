@@ -1,6 +1,7 @@
+import glob
+import os
 from typing import List
 from dynaconf import Dynaconf
-import os
 
 
 class Config:
@@ -55,7 +56,7 @@ class Config:
         """
         if not self._initialized:
             self.env = env
-            self.path: str | List[str] = self._get_path(path)
+            self.path: str | List[str] = self._get_path() if path is None else path
             self._conf: Dynaconf = Dynaconf(
                 environments=True,
                 env=self.env,
@@ -65,23 +66,21 @@ class Config:
             self._initialized = True
 
     @staticmethod
-    def _get_path(path: str | List[str] | None = None) -> str:
+    def _get_path() -> List[str]:
         """
         Determines the configuration file path if not explicitly provided.
 
-        Defaults to '*.toml' files in the parent directory of the parent directory of the current file.
-
-        Args:
-            path (str | List[str] | None, optional): The explicit path(s) to configuration files.
+        Defaults to '*.toml' files in the working directory.
 
         Returns:
             str: The determined or provided file path for the configuration files.
         """
-        if path is None:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
-            path = f"{parent_dir}/*.toml"
-        return path
+        path = os.getcwd()
+        toml_files = glob.glob(f"{path}/*.toml")
+        if toml_files:
+            return toml_files
+        else:
+            raise FileNotFoundError("No TOML file found in the current directory.")
 
     def __getattr__(self, item):
         """
