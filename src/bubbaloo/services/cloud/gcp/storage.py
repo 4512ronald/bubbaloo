@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Callable, Any
+from typing import List, Tuple, Callable
 import re
 
 from bubbaloo.utils.interfaces.storage_client import IStorageManager
@@ -167,9 +167,22 @@ class CloudStorageManager(IStorageManager):
             self._copy(source_bucket, source_blob, destination_bucket_name, destination_blob_name)
             self.delete(source_blob)
 
-    def filter(self, blobs: List[Blob], filter_fuc: Callable[..., str]) -> List[str]:
+    def filter(self, blobs: List[Blob], filter_func: Callable[..., str]) -> List[str]:
+        """
+        Filters a list of Blob objects based on a specified filter function.
 
-        return [blob for blob in map(lambda blob: filter_fuc(blob), blobs) if blob is not None]
+        This method applies a filter function to each Blob in the given list and returns a list of results for which
+        the filter function does not return None.
+
+        Args:
+            blobs (List[Blob]): A list of Blob objects to be filtered.
+            filter_func (Callable[..., str]): A function that takes a Blob object as input and returns a string if the
+            Blob meets the filter criteria, or None otherwise.
+
+        Returns:
+            List[str]: A list of results from the filter function for Blobs that meet the criteria.
+        """
+        return [blob for blob in map(lambda blob: filter_func(blob), blobs) if blob is not None]
 
     def copy(self, source_blob_paths: List[str], destination_path: str) -> None:
         """

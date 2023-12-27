@@ -88,6 +88,20 @@ class LocalFileManager(IStorageManager):
             except Exception as e:
                 print(f"Failed to move file {file_path} to {destination_directory}. Error: {e}")
 
-    def filter(self, blobs: List[str], filter_fuc: Callable[..., str]) -> List[str]:
+    def filter(self, blobs: List[str], filter_func: Callable[..., str]) -> List[str]:
+        """
+        Filters a list of Blob objects based on a specified filter function.
 
-        return [blob for blob in map(lambda blob: filter_fuc(blob), blobs) if blob is not None]
+        This method applies a filter function to each Blob in the given list and returns a list of results for which
+        the filter function does not return None.
+
+        Args:
+            blobs (List[Blob]): A list of Blob objects to be filtered.
+            filter_func (Callable[..., str]): A function that takes a Blob object as input and returns a string if the
+            Blob meets the filter criteria, or None otherwise.
+
+        Returns:
+            List[str]: A list of results from the filter function for Blobs that meet the criteria.
+        """
+
+        return [blob for blob in map(lambda blob: filter_func(blob), blobs) if blob is not None]
