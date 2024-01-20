@@ -43,5 +43,5 @@ def get_files_days_ago(file_path: str, time_delta: float) -> str | None:
 
     days_ago = datetime.now().date() - timedelta(days=time_delta)
 
-    if mod_date >= days_ago:
+    if mod_date >= days_ago and not file_path.endswith("/_SUCCESS") or file_path.endswith("/"):
         return file_path

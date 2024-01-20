@@ -47,6 +47,28 @@ class Parquet(IValidation):
         self._storage_client: IStorageManager = self._params.get("storage_client")
         self._error_context: PipelineState = self._params.get("context")
         self._error_path: str = self._params.get("error_path")
+        self._invalid_blobs: List[str] | None = None
+        self._validation_resume: List[Dict[str, str]] | str = []
+
+    @property
+    def invalid_blobs(self) -> List[str] | None:
+        """
+        Returns a list of invalid blobs.
+
+        Returns:
+            List[str] | None: A list of invalid blobs.
+        """
+        return self._invalid_blobs
+
+    @property
+    def validation_resume(self) -> List[Dict[str, str]] | str:
+        """
+        Returns a summary of the validation results.
+
+        Returns:
+            List[Dict[str, str]] | str: A summary of the validation results.
+        """
+        return self._validation_resume
 
     def _get_invalid_blobs(self, file_paths: List[str]) -> Generator[Dict[str, str], None, None]:
         """
@@ -131,12 +153,12 @@ class Parquet(IValidation):
             not_valid_blob (List[Dict[str, str]]): A list of invalid blobs containing file paths and error messages.
         """
         sorted_list = sorted(not_valid_blob, key=lambda item: item["error"])
-        validation_errors = [
+        self._validation_resume = [
             {"message": key, "files": [item["path"] for item in items]}
             for key, items in itertools.groupby(sorted_list, key=lambda item: item["error"])
         ]
 
-        self._error_context.errors["dataProcessing"] = str(validation_errors)
+        self._error_context.errors["dataProcessing"] = str(self._validation_resume)
 
     def _get_schema_from_temp_copy(self, file_path: str) -> pa.Schema:
         """
@@ -190,8 +212,10 @@ class Parquet(IValidation):
         """
         self._logger.info("Checking integrity of the data...")
 
-        if invalid_blobs := list(self._get_invalid_blobs(self._objects_to_validate)):
-            self._handle_invalid_files(invalid_blobs)
-            self._move_invalid_files(invalid_blobs)
+        self._invalid_blobs = list(self._get_invalid_blobs(self._objects_to_validate))
+
+        if self._invalid_blobs:
+            self._handle_invalid_files(self._invalid_blobs)
+            self._move_invalid_files(self._invalid_blobs)
         else:
             self._logger.info("Files validated successfully")
